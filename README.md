@@ -2,7 +2,7 @@
 
 Automated deployment of a K3s Kubernetes cluster on Hetzner Cloud, using Infrastructure as Code principles with Terraform and Ansible.
 
-![Hetzner Cloud Kubernetes Server](.img/hetzner_cloud.png)
+![Hetzner Cloud Kubernetes Server](img/hetzner_cloud.png)
 
 ## 📋 Contents
 
