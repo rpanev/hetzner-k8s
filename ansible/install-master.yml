@@ -3,7 +3,10 @@
   hosts: all
   become: yes
   vars:
-    k3s_version: "v1.27.5+k3s1" 
+    k3s_version: "{{ lookup('env', 'K3S_VERSION') | default('v1.27.5+k3s1') }}" 
+    hcloud_token: "{{ lookup('env', 'HCLOUD_TOKEN') | default('') }}"
+    network_name: "hetzner-network"
+    datacenter: "fsn1"
     k3s_server_args:
       - "--disable=traefik"
       - "--tls-san={{ ansible_host }}"
@@ -166,6 +169,23 @@
         path: ~/.kube/config
         regexp: 'https://127.0.0.1:6443'
         replace: 'https://{{ ansible_host }}:6443'
+
+    - name: Create manifests directory
+      ansible.builtin.file:
+        path: /var/lib/rancher/k3s/server/manifests
+        state: directory
+        mode: '0755'
+
+    - name: Copy Hetzner Cloud Controller Manager manifest
+      ansible.builtin.template:
+        src: templates/manifests/hcloud-ccm.yaml.j2
+        dest: /var/lib/rancher/k3s/server/manifests/hcloud-ccm.yaml
+        mode: '0644'
+
+    - name: Wait for Hetzner Cloud Controller Manager to be applied
+      ansible.builtin.pause:
+        seconds: 30
+        prompt: "Изчакване на прилагането на Hetzner Cloud Controller Manager"
 
     - name: Get K3s token
       ansible.builtin.slurp:

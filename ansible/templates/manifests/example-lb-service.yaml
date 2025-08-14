@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-lb-service
+  annotations:
+    # Location of the Load Balancer (can be changed according to needs)
+    load-balancer.hetzner.cloud/location: "fsn1"
+    # Use private network for communication with nodes
+    load-balancer.hetzner.cloud/use-private-ip: "true"
+    # Prevents issues with IPVS based network plugins
+    load-balancer.hetzner.cloud/disable-private-ingress: "true"
+spec:
+  selector:
+    app: example-app
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      name: http
+    - port: 443
+      targetPort: 8443
+      protocol: TCP
+      name: https
+  type: LoadBalancer

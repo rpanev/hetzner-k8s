@@ -4,7 +4,7 @@
   become: yes
   vars:
     master_ip: "{{ master_private_ip }}"
-    k3s_version: "v1.27.5+k3s1"
+    k3s_version: "{{ lookup('env', 'K3S_VERSION') | default('v1.27.5+k3s1') }}"
 
   tasks:
     - name: Ensure required directories exist
