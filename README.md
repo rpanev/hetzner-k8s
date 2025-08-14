@@ -13,9 +13,10 @@ Automated deployment of a K3s Kubernetes cluster on Hetzner Cloud, using Infrast
 5. [Step 3: Infrastructure Deployment](#step-3-infrastructure-deployment)
 6. [Step 4: Cluster Access](#step-4-cluster-access)
 7. [Step 5: Testing the Cluster](#step-5-testing-the-cluster)
-8. [Step 6: Cleanup (Optional)](#step-6-cleanup-optional)
-9. [Advanced Topics](#advanced-topics)
-10. [Troubleshooting](#troubleshooting)
+8. [Step 6: LoadBalancer Demo Application](#step-6-loadbalancer-demo-application)
+9. [Step 7: Cleanup (Optional)](#step-7-cleanup-optional)
+10. [Advanced Topics](#advanced-topics)
+11. [Troubleshooting](#troubleshooting)
 
 ## Overview and Architecture
 
@@ -34,7 +35,7 @@ Automated deployment of a K3s Kubernetes cluster on Hetzner Cloud, using Infrast
 
 ### Important Notes
 - ✅ **Tested on**: AlmaLinux 9 servers
-- 🔧 **Requirements**: Hetzner Cloud API token and SSH keys
+- 🔑 **Requirements**: Hetzner Cloud API token and SSH keys
 
 ## Prerequisites
 
@@ -128,7 +129,7 @@ subnet_ip_cidr = "10.0.1.0/24"
 ssh_key_fingerprint = "51:b1:4d:17:30:a9:d3:c4:57:1f:bf:c9:63:8a:96:3a"
 ssh_allowed_ip      = "your-public-ip"
 
-# Load Balancer // TODO: Add load balancer configuration
+# Load Balancer 
 load_balancer_type = "lb11" 
 ```
 
@@ -227,7 +228,7 @@ terraform plan -destroy
 terraform destroy
 ```
 
-⚠️ **Warning**: Destroying the infrastructure will permanently delete:
+?????? **Warning**: Destroying the infrastructure will permanently delete:
 - All servers and their data
 - All Kubernetes workloads and persistent volumes
 - All cluster configurations
@@ -251,6 +252,23 @@ Ansible playbooks take care of:
 - Initializing K3s master
 - Joining worker nodes with the correct tokens
 - Shell configuration (zsh with antigen)
+
+### Environment Variables
+
+The deployment script (`deploy.sh`) exports environment variables that are used by the Ansible playbooks:
+
+```bash
+# K3s version to install
+export K3S_VERSION="v1.27.5+k3s1"
+
+# Hetzner Cloud API token for cloud controller manager
+export HCLOUD_TOKEN="your-hetzner-cloud-api-token"
+```
+
+These variables are used by the Ansible playbooks to:
+- Install the correct version of K3s
+- Configure the Hetzner Cloud Controller Manager for LoadBalancer support
+- Enable proper integration with Hetzner Cloud resources
 
 ## Step 4: Cluster Access
 
@@ -309,8 +327,8 @@ Validate the functionality of your K3s cluster with a comprehensive test applica
 ### 5.1 Deploying the Test Application
 
 ```bash
-# Navigate to helm directory
-cd ../helm/
+# Navigate to demo-deploy directory
+cd ../demo-deploy/
 
 # Deploy test application
 ./deploy-test-app.sh
@@ -340,12 +358,12 @@ kubectl port-forward -n k3s-test svc/k3s-test-app 8080:80
 ### 5.3 What the Test Validates
 
 The test application confirms:
-- 🚀 **Container Runtime** - containerd pulling and executing images
-- 🌎 **Service Discovery** - Internal DNS and service mesh
-- ⚖️ **Load Balancing** - Traffic distribution between pods
-- 🔗 **Networking** - Pod-to-pod and external communication
-- 📦 **ConfigMaps** - Configuration injection and mounting
-- 🔍 **Health Checks** - Liveness and readiness probes
+- ✅ **Container Runtime** - containerd pulling and executing images
+- ✅ **Service Discovery** - Internal DNS and service mesh
+- ✅ **Load Balancing** - Traffic distribution between pods
+- ✅ **Networking** - Pod-to-pod and external communication
+- ✅ **ConfigMaps** - Configuration injection and mounting
+- ✅ **Health Checks** - Liveness and readiness probes
 
 ### 5.4 Test Monitoring
 
@@ -360,25 +378,76 @@ kubectl get svc -n k3s-test
 kubectl logs -n k3s-test -l app.kubernetes.io/name=k3s-test-app -f
 ```
 
-## Step 6: Cleanup (Optional)
+## Step 6: LoadBalancer Demo Application
+
+Test the Hetzner Cloud LoadBalancer integration with a demo application.
+
+### 6.1 Deploying the LoadBalancer Demo
+
+```bash
+# Navigate to demo-deploy directory
+cd helm/
+
+# Deploy LoadBalancer demo application
+./deploy-lb-app.sh
+```
+
+**What the LoadBalancer demo provides:**
+- ✅ **NGINX web server** with custom HTML interface
+- ✅ **Python sidecar container** providing server information
+- ✅ **Hetzner Cloud LoadBalancer** with external IP
+- ✅ **Real-time server information** (hostname, pod IP, node name, LoadBalancer IP)
+- ✅ **Automatic IP detection** from Hetzner Cloud API
+
+### 6.2 Accessing the LoadBalancer Demo
+
+The script will output the LoadBalancer IP address. You can access the application at:
+
+```
+http://<loadbalancer-ip>
+```
+
+The application displays:
+- Pod hostname
+- Pod IP address
+- Kubernetes node name
+- LoadBalancer external IP
+
+### 6.3 How It Works
+
+The LoadBalancer demo showcases:
+- Hetzner Cloud LoadBalancer integration with Kubernetes
+- Multi-container pods with nginx and Python sidecar
+- ConfigMap for configuration and HTML content
+- Environment variable passing between containers
+- Dynamic information retrieval via HTTP endpoints
+
+### 6.4 Cleaning Up the LoadBalancer Demo
+
+```bash
+# From the demo-deploy directory
+./destroy-lb-app.sh
+```
+
+## Step 7: Cleanup (Optional)
 
 When you have finished testing or want to remove resources.
 
-### 6.1 Cleaning Up the Test Application
+### 7.1 Cleaning Up the Test Application
 
 **Automated cleanup (Recommended):**
 ```bash
-# From the helm directory
+# From the demo-deploy directory
 ./destroy-test-app.sh
 ```
 
 **Manual cleanup:**
 ```bash
 helm uninstall k3s-test-app -n k3s-test
-kubectl delete namespace k3s-test
+kubectl delete namespace k3s-testgit 
 ```
 
-### 6.2 Destroying the Infrastructure
+### 7.2 Destroying the Infrastructure
 
 **Automated destruction (Recommended):**
 ```bash
@@ -396,7 +465,7 @@ terraform plan -destroy
 terraform destroy
 ```
 
-⚠️ **Warning**: This will permanently delete all servers, data, and configurations!
+?????? **Warning**: This will permanently delete all servers, data, and configurations!
 
 ---
 
@@ -466,7 +535,47 @@ terraform {
 }
 ```
 
-### High Availability // TODO : Add load balancer configuration
+### High Availability with Hetzner Cloud Load Balancer
+
+Проектът включва интеграция с Hetzner Cloud Controller Manager (HCCM), който позволява автоматично създаване и конфигуриране на Hetzner Cloud Load Balancer чрез Kubernetes Services от тип LoadBalancer.
+
+#### Как работи интеграцията
+
+1. HCCM се инсталира автоматично при деплойването на клъстера
+2. За всеки Kubernetes Service от тип LoadBalancer, HCCM създава Hetzner Cloud Load Balancer
+3. Конфигурацията се управлява чрез анотации в Service манифеста
+
+#### Пример за Service с LoadBalancer
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-service
+  annotations:
+    # Локация на Load Balancer-а
+    load-balancer.hetzner.cloud/location: "fsn1"
+    # Използване на частна мрежа за комуникация с нодовете
+    load-balancer.hetzner.cloud/use-private-ip: "true"
+    # Предотвратява проблеми с IPVS базирани мрежови плъгини
+    load-balancer.hetzner.cloud/disable-private-ingress: "true"
+spec:
+  selector:
+    app: example
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: LoadBalancer
+```
+
+#### Поддържани анотации
+
+- `load-balancer.hetzner.cloud/location`: Локация на Load Balancer-а (напр. "fsn1", "nbg1", "hel1")
+- `load-balancer.hetzner.cloud/use-private-ip`: Дали да се използва частната мрежа за комуникация с нодовете
+- `load-balancer.hetzner.cloud/disable-private-ingress`: Предотвратява проблеми с IPVS базирани мрежови плъгини
+- `load-balancer.hetzner.cloud/name`: Име на Load Balancer-а (по подразбиране се генерира автоматично)
+
+Повече информация: [Hetzner Cloud Controller Manager Load Balancer Guide](https://github.com/hetznercloud/hcloud-cloud-controller-manager/blob/main/docs/guides/load-balancer/quickstart.md)
 
 Scaling master nodes for high availability:
 
@@ -539,10 +648,12 @@ kubectl --kubeconfig ./kubeconfig get nodes -o wide
 │       └── zshrc.j2           # Shell configuration template
 ├── deploy.sh                    # Automated deployment script
 ├── destroy.sh                   # Automated destruction script
-├── helm/                        # Helm configuration for testing
+├── demo-deploy/                 # Demo deployment scripts
 │   ├── Chart.yaml              # Helm chart metadata
 │   ├── deploy-test-app.sh      # Script for deploying test application
 │   ├── destroy-test-app.sh     # Script for removing test application
+│   ├── deploy-lb-app.sh        # Script for deploying LoadBalancer demo
+│   ├── destroy-lb-app.sh       # Script for removing LoadBalancer demo
 │   ├── templates/              # Templates for Kubernetes resources
 │   ├── values-ip-access.yaml   # Values for IP access
 │   └── values.yaml             # Core values

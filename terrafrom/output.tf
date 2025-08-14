@@ -7,6 +7,16 @@ output "master_public_ip" {
   value       = hcloud_server.kube_master.ipv4_address
 }
 
+output "load_balancer_ipv4" {
+  description = "The public IPv4 address of the Hetzner Load Balancer"
+  value       = hcloud_load_balancer.load_balancer.ipv4
+}
+
+output "load_balancer_name" {
+  description = "The name of the Hetzner Load Balancer"
+  value       = hcloud_load_balancer.load_balancer.name
+}
+
 #output "master_network_debug" {
 #  value = hcloud_server.kube_master.network
 #}

@@ -5,6 +5,19 @@
 
 set -e  # Exit on any error
 
+# Common variables for K3s Hetzner Cloud deployment
+
+# K3s version to install
+export K3S_VERSION="v1.33.3+k3s1"
+
+# Hetzner Cloud API token (can be overridden by environment variable)
+if [ -z "$HCLOUD_TOKEN" ]; then
+  # Read from terraform.tfvars if available
+  if [ -f "terrafrom/terraform.tfvars" ]; then
+    export HCLOUD_TOKEN=$(grep -E "^hcloud_token\s*=" terrafrom/terraform.tfvars | cut -d'"' -f2)
+  fi
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
