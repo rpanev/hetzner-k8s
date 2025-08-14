@@ -444,7 +444,7 @@ When you have finished testing or want to remove resources.
 **Manual cleanup:**
 ```bash
 helm uninstall k3s-test-app -n k3s-test
-kubectl delete namespace k3s-test
+kubectl delete namespace k3s-testgit 
 ```
 
 ### 7.2 Destroying the Infrastructure
